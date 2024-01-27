@@ -18,6 +18,8 @@ const Otp = mongoose.model("otpInfo", OtpSchhema)
 
 const otpValidator = z.object({
     phoneNumber: z.string(),
+    email: z.string(),
+    password: z.string() || z.number()
 });
 
 
@@ -37,7 +39,7 @@ router.post('/send-otp', validateOtpSchema, (req, res) => {
         const { phoneNumber } = req.body;
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpStore = new Otp({ ...req.otpValidate, otp: otp });
+        const otpStore = new Otp({ ...req.otpValidate, otp });
 
         otpStore.save();
         client.messages.create({
@@ -46,7 +48,7 @@ router.post('/send-otp', validateOtpSchema, (req, res) => {
             to: phoneNumber,
         });
 
-        res.status(200).json({ message: 'OTP sent successfully' });
+        res.status(200).json({ message: 'OTP sent successfully', phoneNumber: phoneNumber });
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -56,16 +58,15 @@ router.post('/send-otp', validateOtpSchema, (req, res) => {
 router.post('/otp-verify', async (req, res) => {
     try {
         const { phoneNumber, otp } = req.body;
+        const userDetail = await Otp.findOne({ phoneNumber: phoneNumber })
 
-        const otpDetail = await Otp.findOne({ phoneNumber: phoneNumber })
-
-        if (!otpDetail) {
+        if (!userDetail) {
             return res.status(400).json({ error: 'OTP not found. Please generate OTP first.' });
         }
 
-        if (otp == otpDetail.otp) {
+        if (otp == userDetail.otp) {
             await Otp.deleteOne({ phoneNumber: phoneNumber });
-            res.status(200).json({ message: 'OTP verified successfully' });
+            res.status(200).json({ message: 'OTP verified successfully', validate: true, user: userDetail });
         } else {
             res.status(400).json({ error: 'Invalid OTP' });
         }

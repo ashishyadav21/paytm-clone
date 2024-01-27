@@ -4,8 +4,7 @@ const mongoose = require('mongoose');
 const { z } = require('zod')
 var jwt = require('jsonwebtoken');
 
-const { UserSchema } = require('../model/User')
-const User = mongoose.model("User", UserSchema);
+const { UserSchema, accountSchema, User, Account } = require('../model/User')
 
 const createUserValidator = z.object({
     username: z.string(),
@@ -15,7 +14,11 @@ const createUserValidator = z.object({
     email: z.string()
 });
 
+exports.getAllUser = async (req, res) => {
+    const allUsers = await User.find()
 
+    res.status(200).json({ users: allUsers })
+}
 
 exports.registerUser = async (req, res) => {
     const user = new User(req.validatedUser);
@@ -26,7 +29,20 @@ exports.registerUser = async (req, res) => {
     }
     const savedUser = await user.save();
 
-    res.json({ 'msg': 'user created successfully', data: savedUser })
+    const userId = savedUser._id;
+
+    await Account.create({
+        userId,
+        balance: 1 + Math.random() * 10000
+    })
+
+    const token = jwt.sign({
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+        username: existingUser?.username,
+    },
+        process.env.JWT_SECRET);
+
+    res.json({ 'msg': 'user created successfully', data: savedUser, token: token })
 }
 
 exports.signin = async (req, res) => {
@@ -36,7 +52,7 @@ exports.signin = async (req, res) => {
 
     const token = jwt.sign({
         exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
-        username: existingUser.username,
+        username: existingUser?.username,
     },
         process.env.JWT_SECRET);
 

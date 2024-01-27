@@ -2,12 +2,13 @@ var express = require('express');
 var router = express.Router();
 const { z } = require('zod')
 
-const { registerUser, signin, getUserDetail } = require('../controller/userController')
+const { registerUser, signin, getUserDetail, getAllUser } = require('../controller/userController')
 
 const createUserValidator = z.object({
   username: z.string(),
   password: z.string(),
-  name: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
   phoneNumber: z.number(),
   email: z.string()
 });
@@ -45,6 +46,8 @@ const validateLoginUserSchema = (req, res, next) => {
 router.route('/signup').post(validateCreateUserSchema, registerUser)
 
 router.post('/signin', validateLoginUserSchema, signin)
+
+router.get('/', getAllUser)
 
 router.get('/:username', getUserDetail)
 
